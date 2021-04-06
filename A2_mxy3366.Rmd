@@ -1,0 +1,140 @@
+---
+title: "Simple Linear Model For Sale Price Of Homes in Mississauga and Toronto Neighbourhoods"
+author: "mxy3366"
+date: "October 21, 2020"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r, echo=FALSE, include=FALSE}
+library(tidyverse)
+# load the libraries I need for the project
+```
+
+## I. Exploratory Data Analysis
+
+```{r, echo=FALSE}
+all_data_mxy <- read.csv("real20.csv")
+# read the csv into the project
+set.seed(3366)
+random_set_mxy <- sample_n(all_data_mxy, 200, replace = FALSE, prob = NULL)
+# set the seed to the last four digits of my student number and randomly select 200 sample from the original data set
+random_set_mxy <- random_set_mxy %>%
+  rename(sold_mxy = sold, list_mxy = list, taxes_mxy = taxes, location_mxy = location)
+# rename the variables for personalizing needs
+```
+
+```{r, echo=FALSE}
+ggplot(data = random_set_mxy, aes(x = list_mxy, y = sold_mxy)) + geom_point() + labs(title = "Data Description #3366")
+# drawing the scatterplot using list price as the explanatory variable and sold price as the response variable to identify any leverage points and potential influential points
+```
+```{r, echo=FALSE, message=FALSE}
+selected_data_mxy <- random_set_mxy[-c(21, 45), ]
+attach(selected_data_mxy)
+# removing two cases from the random sampled data to create a data set that I will use for the rest of the project
+```
+
+Explanation of my choice:\
+From the scatterplot above, I notice that there are two obvious leverage points, and since they are far away from the linear trend of the other points, I suppose they are influential points that I should remove. Therefore, I remove the corresponding cases from random_set_mxy to create a new one that I would use later on, selected_data_mxy.\
+Interpretation/Highlight:\
+From the scatterplot above, we can see a strong linear relationship of the list price and sold price. However, there are two obvious bad leverage points that would probably influence the linear model, and I would remove them from the data set.\
+
+```{r, echo=FALSE}
+ggplot(data = selected_data_mxy, aes(x = list_mxy, y = sold_mxy, colour = location_mxy)) + geom_point() + labs(title = "Relationship Between List_mxy and Sold_mxy #3366")
+# drawing the scatterplot using list price as the explanatory variable and sold price as the response variable
+```
+
+Interpretation/Highlight:\
+From the scatterplot above, we can see a strong linear relationship of the list price and sold price (list_mxy and sold_mxy). The red points (stand for Mississauga neighborhood) seem to be clustered more towards the left bottom part of the linear trend, but overall the points of the two neighborhood are generally on the same line.\  
+
+```{r, echo=FALSE, message=FALSE}
+ggplot(data = selected_data_mxy, aes(x = taxes_mxy, y = sold_mxy, colour = location_mxy)) + geom_point() + labs(title = "Relationship Between Taxes_mxy and Sold_mxy #3366")
+# drawing the scatterplot using taxes as the explanatory variable and sold price as the response variable
+```
+
+Interpretation/Highlight:\
+From the scatterplot above, we can see that although there is a linear trend between taxes_mxy and sold_mxy, the relationship is relatively week and the points are scattered over the place, with quite a few outliers. Another highlight of the plot is that the relationship between taxes_mxy and sold_mxy among the two neighborhoods seem to distinguish from one another, so we may consider construct two seperate linear models if we are to study this group variables.\
+
+## II. Methods and Model
+
+```{r, echo=FALSE, include=FALSE}
+lmod_mxy <- lm(sold_mxy~list_mxy)
+summary(lmod_mxy)
+confint(lmod_mxy, 'list_mxy', level = 0.95)
+# SLR of sale price from list price for all data
+# also using confint for a 95% confidence interval for the slope parameter
+```
+```{r, echo=FALSE, include=FALSE}
+setT<-selected_data_mxy %>% 
+  filter(location_mxy == "T") 
+lmodT_mxy=lm(setT$sold_mxy~setT$list_mxy, data=setT)
+summary(lmodT_mxy)
+confint(lmodT_mxy, 'setT$list_mxy', level = 0.95)
+# SLR of sale price from list price for properties of neighbourhood T
+# also using confint for a 95% confidence interval for the slope parameter
+```
+```{r, echo=FALSE, include=FALSE}
+setM<-selected_data_mxy %>% 
+  filter(location_mxy == "M") 
+lmodM_mxy=lm(setM$sold_mxy~setM$list_mxy, data=setM)
+summary(lmodM_mxy)
+confint(lmodM_mxy, 'setM$list_mxy', level = 0.95)
+# SLR of sale price from list price for properties of neighbourhood M
+# also using confint for a 95% confidence interval for the slope parameter
+```
+
+```{r, echo=FALSE}
+Dataset <- c ("All", "T", "M")
+# "All" stands for all the selected data, "M" stands for Mississauga and "T" stands for Toronto
+R_squared <- c(0.9620, 0.9470, 0.9870)
+Intercept <- c(0.1563, 0.1755, 0.1630)
+Slope <- c(0.8982, 0.9034, 0.8965)
+Variance <- c(0.0310, 0.0471, 0.0080)
+P_value <- c(0.0000, 0.0000, 0.0000)
+CI_95pct_lb <- c(0.8732, 0.8628, 0.8483)
+CI_95pct_ub <- c(0.9232, 0.9440, 0.8906)
+table_mxy <- data.frame(Dataset, R_squared, Intercept, Slope, Variance, P_value, CI_95pct_lb, CI_95pct_ub)
+table_mxy[,'R_squared'] = format(round(table_mxy[,'R_squared'], 4), nsmall = 4)
+table_mxy[,'P_value'] = format(round(table_mxy[,'P_value'], 4), nsmall = 4)
+# setting the value printed to have four decimal digits
+print(table_mxy)
+# creating and printing out the table I need for this part
+```
+
+Interpretation and comparison Of R-squared:\
+R-squared gives the percentage of variation in y's explained by the regression line. Since the three models are for the same observations, y's have not been transformed and the second and third set of predicator variables are two subsets of the first one, it is useful to compare R-squared here.\
+The three R-squared values are actually really similar, with that of Toronto properties a bit lower and Mississauga a bit higher. They are all quite large, above 0.9, meaning that the percentage of variation in y's explained by the regression line is rather high.\
+Explanation:
+As I mentioned in the first part of the project, for list_mxy as the explanatory variable and sold_mxy as the response variable, the data points of the two subsets are basically on the same line. Also, referring to the estimated intercept and slope of the three models, we can find that the regression lines of these three models are actually very close to one another. This explains either of the models seems to explain a great percentage of the variation in y's.\
+\
+Pooled two-sampled t-test:\
+No, I think a pooled two-sample t-test cannot be used to determine if there is a statistically significant difference between the slopes of the simple linear models for the two neighborhoods. The reason is that though the residuals are normally distributed (according to the assumption), according to the table above, the variance of the residuals of Toronto properties(0.0471) is nearly six times of that of Mississauga properties(0.0080). Therefore, we can't apply the test here.\
+
+## III. Discussions and Limitations
+
+I would select the first model (lmod_mxy).\
+Explanation:\
+From the previous part, I figured that the three models all fit pretty well (with R-squared above 0.9 and p-value very close to 0), I would just choose the first model, for it can explain a larger set of data by itself. Also, since the estimated intercept and slope for the three models are quite close (intercept around 0.16 and slope around 0.90), the regression lines for them would not differ a lot. Therefore, I believe I do not need two separate models for Mississauga and Toronto, instead one general model for all selected data is enough here.\
+\
+Violations of the normal error SLR assumptions for my selected model:\
+```{r, echo=FALSE}
+plot(lmod_mxy, 1)
+title(main = "Residuals vs Fitted values for lmod_mxy #3366")
+# plotting the residuals and fitted values for the model I selected
+```
+
+```{r, echo=FALSE}
+plot(lmod_mxy, 2)
+title(main = "QQ plot of residuals for lmod_mxy #3366")
+# plotting the QQ plot of residuals for the model I selected
+```
+
+From the Residuals vs Fitted values plot, we can notice that there is a slight increase for the value of residuals as fitted values increase, and there are a couple of outliers, but most points are nicely distributed around the line with value 0.0. There is also no signs of the difference of residuals increasing along with fitted values.\
+From the QQ plot of residuals of the model I chose, I found no systematic deviation, though there are a few outliers.\
+I conclude that there are no obvious violations of the normal error SLR assumptions for my selected model (i.e. normality is satisfied).\
+\
+Two potential numeric predictors (other than those given in the data set) that could be
+used to fit a multiple linear regression for sale price:\
+1) The area of the property\
+2) The age of the property\
